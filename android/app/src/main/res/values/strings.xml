@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">My Profile App</string>
+    <string name="facebook_app_id">646286562734012</string>
+    <string name="fb_login_protocol_scheme">fb646286562734012</string>
+</resources>
