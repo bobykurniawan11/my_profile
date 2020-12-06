@@ -415,11 +415,13 @@ class _LoginScreenState extends State<LoginScreen> {
       'photoUrl': userCredential.user.photoURL,
       'role': level
     }).then((value) async {
+      print(userCredential.user.displayName);
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString("uid", userCredential.user.uid);
       await prefs.setString("role", level);
       await prefs.setString("fullname", userCredential.user.displayName);
       await prefs.setString("email", userCredential.user.email);
+      await prefs.setString("photoUrl", userCredential.user.photoURL);
     });
   }
 }

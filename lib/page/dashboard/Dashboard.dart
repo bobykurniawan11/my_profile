@@ -6,10 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:my_profile/page/dashboard/ChatScreen.dart';
 import 'package:my_profile/utils/app_theme_data.dart';
 import 'package:my_profile/utils/my_sharedpreference.dart';
 import 'package:my_profile/utils/routes.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
@@ -24,6 +24,7 @@ class _DashboardState extends State<Dashboard> {
   File _cameraVideo;
   final picker = ImagePicker();
   TextEditingController caption_controller = TextEditingController();
+  Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   VideoPlayerController _cameraVideoPlayerController;
   bool _isUploading = false;
@@ -35,8 +36,11 @@ class _DashboardState extends State<Dashboard> {
   int image_upload_count = 0;
   int max_upload_count = 0;
 
+  List<String> ChatRoom = [];
+
   var _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
   Random _rnd = Random();
+
   @override
   void initState() {
     super.initState();
@@ -46,172 +50,32 @@ class _DashboardState extends State<Dashboard> {
   getUserId() {
     setState(() {
       userId = FirebaseAuth.instance.currentUser.uid;
+
       getUserInformation = user_information();
-      getUserVideo = user_video();
+
       MySharedPreferences.instance.getStringValue("role").then((value) => setState(() {
             if (value == "Level A") {
-              max_upload_count = 3;
+              ChatRoom.add("Group 1");
             } else if (value == "Level B") {
-              max_upload_count = 1;
+              ChatRoom.add("Group 2");
             } else if (value == "Level C") {
-              max_upload_count = 5;
+              ChatRoom.add("Group 1");
+              ChatRoom.add("Group 2");
             }
           }));
     });
   }
 
   Future<DocumentSnapshot> user_information() async {
-    return users.doc(FirebaseAuth.instance.currentUser.uid).get();
-  }
-
-  Future<List<DocumentSnapshot>> user_video() async {
-    final QuerySnapshot result =
-        await users.doc(FirebaseAuth.instance.currentUser.uid).collection("images").get();
-    final List<DocumentSnapshot> documents = result.docs;
-    setState(() {
-      image_upload_count = result.docs.length;
+    final data = users.doc(FirebaseAuth.instance.currentUser.uid).get();
+    data.then((value) async {
+      print(value['fullname']);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString("fullname", value['fullname']);
     });
-
-    return documents;
-  }
-
-  _pickVideoCamera() async {
-    PickedFile pickedFile = await picker.getVideo(source: ImageSource.camera);
-    _cameraVideo = File(pickedFile.path);
-    _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo)
-      ..initialize().then((_) {
-        setState(() {});
-        popUpVideoPlayer();
-        _cameraVideoPlayerController.play();
-      });
-  }
-
-  _pickVideoGallery() async {
-    PickedFile pickedFile = await picker.getVideo(source: ImageSource.gallery);
-    _cameraVideo = File(pickedFile.path);
-    _cameraVideoPlayerController = VideoPlayerController.file(_cameraVideo)
-      ..initialize().then((_) {
-        setState(() {});
-        popUpVideoPlayer();
-        _cameraVideoPlayerController.play();
-      });
-  }
-
-  popUpVideoPlayer() {
-    Alert(
-        context: context,
-        title: "",
-        content: Column(
-          children: [
-            Container(
-              height: 300,
-              width: 300,
-              child: VideoPlayer(_cameraVideoPlayerController),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            TextFormField(
-              key: Key("login_email_field"),
-              controller: caption_controller,
-              keyboardType: TextInputType.emailAddress,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: "Caption",
-                labelStyle: AppThemeData(context: context).myTextTheme.caption,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppThemeData(context: context).borderRadius,
-                  borderSide: BorderSide(
-                    color: Colors.grey.shade300,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: AppThemeData(context: context).colorSecondary,
-                    )),
-              ),
-              textInputAction: TextInputAction.next,
-            ),
-          ],
-        ),
-        buttons: [
-          DialogButton(
-            onPressed: () {
-              if (caption_controller.text.length > 9) {
-                handleUpload();
-                Navigator.pop(context);
-              } else {
-                Alert(context: context, title: "", desc: "At least 10 characters long ", buttons: [
-                  DialogButton(
-                    color: Colors.redAccent,
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      "Ok",
-                      style: AppThemeData(context: context).myTextTheme.button,
-                    ),
-                  ),
-                ]).show();
-              }
-            },
-            child: Text(
-              "Upload",
-              style: AppThemeData(context: context).myTextTheme.button,
-            ),
-          ),
-          DialogButton(
-            color: Colors.redAccent,
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: AppThemeData(context: context).myTextTheme.button,
-            ),
-          ),
-        ]).show();
-  }
-
-  popUpPlayVideoPlayer(String caption) {
-    Alert(
-        context: context,
-        title: "",
-        content: Column(
-          children: [
-            Container(
-              height: 300,
-              width: 300,
-              child: VideoPlayer(_cameraVideoPlayerController),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Text(caption)
-          ],
-        ),
-        buttons: [
-          DialogButton(
-            color: Colors.redAccent,
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Close",
-              style: AppThemeData(context: context).myTextTheme.button,
-            ),
-          ),
-        ]).show();
-  }
-
-  Widget _floatActionButton() {
-    if (image_upload_count == max_upload_count) {
-      return Container();
-    } else if (_isUploading == true) {
-      return Container();
-    } else {
-      return FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () {
-          _showPicker(context);
-        },
-      );
-    }
+    return data;
+    //
+    // prefs.setInt("counter", counter)
   }
 
   @override
@@ -220,7 +84,6 @@ class _DashboardState extends State<Dashboard> {
       onWillPop: () async => false,
       child: Scaffold(
         key: _scaffoldkey,
-        floatingActionButton: _floatActionButton(),
         appBar: AppBar(
           automaticallyImplyLeading: false,
           actions: [
@@ -269,29 +132,18 @@ class _DashboardState extends State<Dashboard> {
               },
             ),
             Divider(),
+            Text("Chat Room"),
+            Divider(),
+            Container(
+              height: 250,
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: VideoSection(),
+              ),
+            ),
             SizedBox(
               height: 20,
             ),
-            Text("Tap to play video and Hold to delete video"),
-            Expanded(
-              child: FutureBuilder<List<DocumentSnapshot>>(
-                future: user_video(),
-                builder: (BuildContext context, AsyncSnapshot<List<DocumentSnapshot>> snapshot) {
-                  if (snapshot.hasError) {
-                    return Text("Something went wrong");
-                  } else if (snapshot.hasData && !snapshot.hasError) {
-                    return ListView.builder(
-                      itemCount: snapshot.data.length,
-                      itemBuilder: (BuildContext ctxt, int index) {
-                        return VideoSection(snapshot.data[index]);
-                      },
-                    );
-                  }
-
-                  return Text("loading");
-                },
-              ),
-            )
           ],
         ),
       ),
@@ -322,82 +174,32 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget VideoSection(data) {
-    return InkWell(
-      child: ListTile(
-        title: Text(data['caption'] ?? ''),
-      ),
-      onLongPress: () {
-        Alert(context: context, title: "", desc: "Are you sure want to delete this ?", buttons: [
-          DialogButton(
-            color: Colors.redAccent,
-            onPressed: () {
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userId)
-                  .collection("images")
-                  .doc(data.id)
-                  .delete();
-              user_video();
-              setState(() {
-                image_upload_count = image_upload_count - 1;
-              });
-              Navigator.pop(context);
-            },
-            child: Text(
-              "Delete",
-              style: AppThemeData(context: context).myTextTheme.button,
+  Widget VideoSection() {
+    return new ListView.builder(
+      itemCount: ChatRoom.length,
+      itemBuilder: (BuildContext ctxt, int index) {
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) {
+                  return ChatScreen(
+                    group_name: ChatRoom[index],
+                  );
+                },
+              ),
+            );
+          },
+          child: ListTile(
+            title: Text(
+              ChatRoom[index],
+              style: TextStyle(fontSize: 22),
             ),
           ),
-          DialogButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: AppThemeData(context: context).myTextTheme.button,
-            ),
-          ),
-        ]).show();
-      },
-      onTap: () {
-        print(data.id);
-        _cameraVideoPlayerController = VideoPlayerController.network(data['download_url'])
-          ..initialize().then((_) {
-            setState(() {});
-          });
-        popUpPlayVideoPlayer(data['caption']);
-        _cameraVideoPlayerController.play();
+        );
       },
     );
-  }
-
-  void _showPicker(context) {
-    showModalBottomSheet(
-        context: context,
-        builder: (BuildContext bc) {
-          return SafeArea(
-            child: Container(
-              child: new Wrap(
-                children: <Widget>[
-                  new ListTile(
-                      leading: new Icon(Icons.photo_library),
-                      title: new Text('Gallery'),
-                      onTap: () {
-                        _pickVideoGallery();
-                        Navigator.of(context).pop();
-                      }),
-                  new ListTile(
-                    leading: new Icon(Icons.photo_camera),
-                    title: new Text('Camera'),
-                    onTap: () {
-                      _pickVideoCamera();
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        });
   }
 
   firebase_storage.UploadTask uploadFile(String user_id) {
@@ -413,6 +215,7 @@ class _DashboardState extends State<Dashboard> {
 
   String getRandomString(int length) => String.fromCharCodes(
       Iterable.generate(length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+
   void handleUpload() async {
     firebase_storage.UploadTask task = uploadFile(userId);
     if (task != null) {
@@ -427,7 +230,6 @@ class _DashboardState extends State<Dashboard> {
           setState(() {
             _isUploading = false;
             finishSnackbar();
-            user_video();
           });
           CollectionReference user_file =
               FirebaseFirestore.instance.collection('users').doc(userId).collection("images");

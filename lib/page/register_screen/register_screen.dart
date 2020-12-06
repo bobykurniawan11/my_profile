@@ -197,34 +197,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   SizedBox(
                     height: 12,
                   ),
-                  new DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: "Role",
-                      labelStyle: AppThemeData(context: context).myTextTheme.caption,
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.grey.shade300,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: AppThemeData(context: context).borderRadius,
-                          borderSide: BorderSide(
-                            color: AppThemeData(context: context).colorSecondary,
-                          )),
-                    ),
-                    items: <String>['Level A', 'Level B', 'Level C'].map((String value) {
-                      return new DropdownMenuItem<String>(
-                        value: value,
-                        child: new Text(value),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _valRole = value;
-                      });
-                    },
-                  ),
                   Align(
                     alignment: Alignment.topRight,
                     child: Text(
@@ -406,7 +378,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'uid': uid,
           'fullname': fullname_controller.text, // John Doe
           'email': email_controller.text, // John Doe
-          'role': _valRole
+          'role': "Level C"
         })
         .then((value) => print("User Added"))
         .catchError((error) => print("Failed to add user: $error"));
